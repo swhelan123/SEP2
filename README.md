@@ -1,7 +1,7 @@
 # HexOust (Group 34 – WheMurPap)
 
 **Module:** COMP20050 – Software Engineering Project 2  
-**Team Members:** Shane Whelan, Torin Murray, Francis Pap
+**Team Members:** Shane Whelan, Torin Murray, Francisc Pap
 
 ## Overview
 HexOust is a two-player board game based on a hexagonal grid. This repository contains our implementation, following a sprint-based development approach.

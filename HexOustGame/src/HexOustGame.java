@@ -9,34 +9,25 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
+public class HexOustGame extends Application {
 
-public class HexOustGame {
+    @Override
+    public void start(Stage primaryStage) {
+        Board board = new Board(6);
+        Layout layout = new Layout(Layout.FLAT, 35, 450, 450);
+
+        HexUI ui = new HexUI(board, layout);
+
+        Scene scene = new Scene(ui, 900, 900);
+        primaryStage.setTitle("Sprint 1 - Display the board");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        ui.drawBoard();
+    }
 
     public static void main(String[] args) {
-        Board board = new Board(6);
-    }
-}
-
-// enumerates cubic cells in a radius
-class Board {
-    private final int radius;
-    private final List<Cell> cells;
-
-    public Board(int radius) {
-        this.radius = radius;
-        this.cells = new ArrayList<>();
-        for (int q = -radius; q <= radius; q++) {
-            for (int r = -radius; r <= radius; r++) {
-                int s = -q - r;
-                if (Math.abs(s) <= radius) {
-                    cells.add(new Cell(q, r, s));
-                }
-            }
-        }
-    }
-
-    public List<Cell> getCells() {
-        return cells;
+        launch(args);
     }
 }
 
@@ -51,6 +42,25 @@ class Cell {
         this.q = q;
         this.r = r;
         this.s = s;
+    }
+}
+
+class Board {
+    private final List<Cell> cells = new ArrayList<>();
+
+    public Board(int radius) {
+        for (int q = -radius; q <= radius; q++) {
+            for (int r = -radius; r <= radius; r++) {
+                int s = -q - r;
+                if (Math.abs(s) <= radius) {
+                    cells.add(new Cell(q, r, s));
+                }
+            }
+        }
+    }
+
+    public List<Cell> getCells() {
+        return cells;
     }
 }
 
@@ -95,5 +105,72 @@ class Layout {
         this.size = size;
         this.originX = originX;
         this.originY = originY;
+    }
+
+    // convert cubic coords to pixel center
+    public Point2D hexToPixel(int q, int r, int s) {
+        double x = (orientation.f0 * q + orientation.f1 * r) * size + originX;
+        double y = (orientation.f2 * q + orientation.f3 * r) * size + originY;
+        return new Point2D(x, y);
+    }
+
+    // get corners for a flat hex
+    public List<Point2D> polygonCorners(Cell cell) {
+        List<Point2D> corners = new ArrayList<>();
+        Point2D center = hexToPixel(cell.q, cell.r, cell.s);
+        for (int i = 0; i < 6; i++) {
+            Point2D offset = hexCornerOffset(i);
+            corners.add(new Point2D(center.x + offset.x, center.y + offset.y));
+        }
+        return corners;
+    }
+
+    private Point2D hexCornerOffset(int corner) {
+        double angle = 2.0 * Math.PI * (orientation.startAngle - corner) / 6.0;
+        double ox = size * Math.cos(angle);
+        double oy = size * Math.sin(angle);
+        return new Point2D(ox, oy);
+    }
+}
+
+// ui implementation
+class HexUI extends StackPane {
+    private final Board board;
+    private final Layout layout;
+    private final Canvas canvas;
+
+    public HexUI(Board board, Layout layout) {
+        this.board = board;
+        this.layout = layout;
+        this.canvas = new Canvas(900, 900);
+        getChildren().add(canvas);
+    }
+
+    public void drawBoard() {
+        var gc = canvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
+        for (Cell cell : board.getCells()) {
+            List<Point2D> corners = layout.polygonCorners(cell);
+            int n = corners.size();
+            double[] xPoints = new double[n];
+            double[] yPoints = new double[n];
+            for (int i = 0; i < n; i++) {
+                xPoints[i] = corners.get(i).x;
+                yPoints[i] = corners.get(i).y;
+            }
+            gc.setStroke(Color.BLACK);
+            gc.strokePolygon(xPoints, yPoints, n);
+        }
+    }
+}
+
+// simple 2d point
+class Point2D {
+    public final double x, y;
+
+    public Point2D(double x, double y) {
+        this.x = x;
+        this.y = y;
     }
 }

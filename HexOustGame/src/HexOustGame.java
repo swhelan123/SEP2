@@ -32,10 +32,16 @@ public class HexOustGame extends Application {
     }
 }
 
-// represents a single cell with cubic coords
+enum Stone {
+    RED, BLUE;
+    public Color getColor() {
+        return (this == RED) ? Color.RED : Color.BLUE;
+    }
+}
+
 class Cell {
     public final int q, r, s;
-    public boolean hasTile = false; // single color tile
+    public Stone stone = null;
 
     public Cell(int q, int r, int s) {
         if (q + r + s != 0) {
@@ -82,7 +88,6 @@ class Board {
     }
 }
 
-// defines orientation factors for flat-topped hex
 class Orientation {
     public final double f0, f1, f2, f3;
     public final double b0, b1, b2, b3;
@@ -99,7 +104,6 @@ class Orientation {
     }
 }
 
-// stores layout info for hex grids
 class Layout {
     public static final Orientation FLAT = new Orientation(
             3.0 / 2.0, 0.0,
@@ -121,14 +125,12 @@ class Layout {
         this.originY = originY;
     }
 
-    // convert cubic coords to pixel center
     public Point2D hexToPixel(int q, int r, int s) {
         double x = (orientation.f0 * q + orientation.f1 * r) * size + originX;
         double y = (orientation.f2 * q + orientation.f3 * r) * size + originY;
         return new Point2D(x, y);
     }
 
-    // get corners for a flat hex
     public List<Point2D> polygonCorners(Cell cell) {
         List<Point2D> corners = new ArrayList<>();
         Point2D center = hexToPixel(cell.q, cell.r, cell.s);
@@ -147,12 +149,12 @@ class Layout {
     }
 }
 
-// ui implementation
 class HexUI extends StackPane {
     private final Board board;
     private final Layout layout;
     private final Canvas canvas;
     private Cell hoveredCell = null;
+    private Stone currentStone = Stone.RED;
 
     public HexUI(Board board, Layout layout) {
         this.board = board;
@@ -160,9 +162,7 @@ class HexUI extends StackPane {
         this.canvas = new Canvas(900, 900);
         getChildren().add(canvas);
 
-        // highlight on hover
         canvas.setOnMouseMoved(this::handleMouseMoved);
-        // click for single color tile
         canvas.setOnMouseClicked(this::handleMouseClicked);
     }
 
@@ -188,9 +188,9 @@ class HexUI extends StackPane {
             gc.setStroke(Color.BLACK);
             gc.strokePolygon(xPoints, yPoints, n);
 
-            if (cell.hasTile) {
+            if (cell.stone != null) {
                 Point2D c = layout.hexToPixel(cell.q, cell.r, cell.s);
-                gc.setFill(Color.BLUE); // single color tile
+                gc.setFill(cell.stone.getColor());
                 gc.fillOval(c.x - 12, c.y - 12, 24, 24);
             }
         }
@@ -207,8 +207,9 @@ class HexUI extends StackPane {
         double mx = e.getX();
         double my = e.getY();
         Cell c = board.findCellClosest(mx, my, layout);
-        if (c != null && !c.hasTile) {
-            c.hasTile = true;
+        if (c != null && c.stone == null) {
+            c.stone = currentStone;
+            currentStone = (currentStone == Stone.RED) ? Stone.BLUE : Stone.RED;
         }
         drawBoard();
     }

@@ -1,7 +1,7 @@
-import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -19,7 +19,7 @@ public class HexOustGame extends Application {
         HexUI ui = new HexUI(board, layout);
 
         Scene scene = new Scene(ui, 900, 900);
-        primaryStage.setTitle("Sprint 1 - Display the board");
+        primaryStage.setTitle("Sprint 2 - Stone Placing");
         primaryStage.setScene(scene);
         primaryStage.show();
 
@@ -61,6 +61,22 @@ class Board {
 
     public List<Cell> getCells() {
         return cells;
+    }
+
+    public Cell findCellClosest(double x, double y, Layout layout) {
+        Cell closest = null;
+        double minDist = Double.MAX_VALUE;
+        for (Cell cell : cells) {
+            Point2D c = layout.hexToPixel(cell.q, cell.r, cell.s);
+            double dx = c.x - x;
+            double dy = c.y - y;
+            double dist = dx*dx + dy*dy;
+            if (dist < minDist) {
+                minDist = dist;
+                closest = cell;
+            }
+        }
+        return closest;
     }
 }
 
@@ -138,16 +154,20 @@ class HexUI extends StackPane {
     private final Board board;
     private final Layout layout;
     private final Canvas canvas;
+    private Cell hoveredCell = null;
 
     public HexUI(Board board, Layout layout) {
         this.board = board;
         this.layout = layout;
         this.canvas = new Canvas(900, 900);
         getChildren().add(canvas);
+
+        // highlight on hover
+        canvas.setOnMouseMoved(this::handleMouseMoved);
     }
 
     public void drawBoard() {
-        var gc = canvas.getGraphicsContext2D();
+        GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
         for (Cell cell : board.getCells()) {
@@ -159,16 +179,28 @@ class HexUI extends StackPane {
                 xPoints[i] = corners.get(i).x;
                 yPoints[i] = corners.get(i).y;
             }
+
+            if (cell == hoveredCell) {
+                gc.setFill(Color.LIGHTGREEN);
+                gc.fillPolygon(xPoints, yPoints, n);
+            }
+
             gc.setStroke(Color.BLACK);
             gc.strokePolygon(xPoints, yPoints, n);
         }
+    }
+
+    private void handleMouseMoved(MouseEvent e) {
+        double mx = e.getX();
+        double my = e.getY();
+        hoveredCell = board.findCellClosest(mx, my, layout);
+        drawBoard();
     }
 }
 
 // simple 2d point
 class Point2D {
     public final double x, y;
-
     public Point2D(double x, double y) {
         this.x = x;
         this.y = y;

@@ -1,3 +1,4 @@
+import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -34,6 +35,7 @@ public class HexOustGame extends Application {
 // represents a single cell with cubic coords
 class Cell {
     public final int q, r, s;
+    public boolean hasTile = false; // single color tile
 
     public Cell(int q, int r, int s) {
         if (q + r + s != 0) {
@@ -89,14 +91,10 @@ class Orientation {
     public Orientation(double f0, double f1, double f2, double f3,
                        double b0, double b1, double b2, double b3,
                        double startAngle) {
-        this.f0 = f0;
-        this.f1 = f1;
-        this.f2 = f2;
-        this.f3 = f3;
-        this.b0 = b0;
-        this.b1 = b1;
-        this.b2 = b2;
-        this.b3 = b3;
+        this.f0 = f0; this.f1 = f1;
+        this.f2 = f2; this.f3 = f3;
+        this.b0 = b0; this.b1 = b1;
+        this.b2 = b2; this.b3 = b3;
         this.startAngle = startAngle;
     }
 }
@@ -164,6 +162,8 @@ class HexUI extends StackPane {
 
         // highlight on hover
         canvas.setOnMouseMoved(this::handleMouseMoved);
+        // click for single color tile
+        canvas.setOnMouseClicked(this::handleMouseClicked);
     }
 
     public void drawBoard() {
@@ -187,6 +187,12 @@ class HexUI extends StackPane {
 
             gc.setStroke(Color.BLACK);
             gc.strokePolygon(xPoints, yPoints, n);
+
+            if (cell.hasTile) {
+                Point2D c = layout.hexToPixel(cell.q, cell.r, cell.s);
+                gc.setFill(Color.BLUE); // single color tile
+                gc.fillOval(c.x - 12, c.y - 12, 24, 24);
+            }
         }
     }
 
@@ -196,9 +202,18 @@ class HexUI extends StackPane {
         hoveredCell = board.findCellClosest(mx, my, layout);
         drawBoard();
     }
+
+    private void handleMouseClicked(MouseEvent e) {
+        double mx = e.getX();
+        double my = e.getY();
+        Cell c = board.findCellClosest(mx, my, layout);
+        if (c != null && !c.hasTile) {
+            c.hasTile = true;
+        }
+        drawBoard();
+    }
 }
 
-// simple 2d point
 class Point2D {
     public final double x, y;
     public Point2D(double x, double y) {

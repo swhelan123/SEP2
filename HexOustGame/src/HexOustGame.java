@@ -300,4 +300,30 @@ class GameLogic {
     // if illegal (adjacent to own and no capture), return 0;
     // return 2 if capture occurred; return 1 if legal non-capturing move.
     public static int processMove(Cell c, Board board, Stone currentColor) {
-        
+        if (c.stone != null) return 0;
+        c.stone = currentColor;
+        List<Cell> sameGroup = getConnectedGroup(c, board, currentColor);
+        List<List<Cell>> opponentGroups = getOpponentGroups(c, board, currentColor);
+        boolean captureOccurred = false;
+        for (List<Cell> group : opponentGroups) {
+            if (sameGroup.size() > group.size()) {
+                for (Cell opp : group) {
+                    opp.stone = null;
+                }
+                captureOccurred = true;
+            }
+        }
+        boolean adjacentOwn = false;
+        for (Cell neighbor : getNeighbors(c, board)) {
+            if (neighbor.stone == currentColor) {
+                adjacentOwn = true;
+                break;
+            }
+        }
+        if (adjacentOwn && !captureOccurred) {
+            c.stone = null;
+            return 0;
+        }
+        return captureOccurred ? 2 : 1;
+    }
+}

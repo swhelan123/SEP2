@@ -17,12 +17,11 @@ public class HexOustGame extends Application {
         Layout layout = new Layout(Layout.FLAT, 35, 450, 450);
         HexUI ui = new HexUI(board, layout);
         Scene scene = new Scene(ui, 900, 900);
-        primaryStage.setTitle("Sprint 3 - Basic Capturing Logic");
+        primaryStage.setTitle("Sprint 3 - Restricted Moves Added");
         primaryStage.setScene(scene);
         primaryStage.show();
         ui.drawBoard();
     }
-
     public static void main(String[] args) {
         launch(args);
     }
@@ -50,23 +49,24 @@ class Board {
         for(int q = -radius; q <= radius; q++){
             for(int r = -radius; r <= radius; r++){
                 int s = -q - r;
-                if(Math.abs(s) <= radius) {
+                if(Math.abs(s) <= radius){
                     cells.add(new Cell(q, r, s));
                 }
             }
         }
     }
-    public List<Cell> getCells() {
-        return cells;
-    }
+    public List<Cell> getCells() { return cells; }
     public Cell findCellClosest(double x, double y, Layout layout) {
         Cell closest = null;
         double minDist = Double.MAX_VALUE;
-        for(Cell cell : cells) {
+        for(Cell cell : cells){
             Point2D c = layout.hexToPixel(cell.q, cell.r, cell.s);
             double dx = c.x - x, dy = c.y - y;
             double dist = dx*dx + dy*dy;
-            if(dist < minDist) { minDist = dist; closest = cell; }
+            if(dist < minDist){
+                minDist = dist;
+                closest = cell;
+            }
         }
         return closest;
     }
@@ -125,7 +125,6 @@ class HexUI extends StackPane {
     private final Canvas canvas;
     private Cell hoveredCell = null;
     private Stone currentStone = Stone.RED;
-
     public HexUI(Board board, Layout layout) {
         this.board = board;
         this.layout = layout;
@@ -134,19 +133,19 @@ class HexUI extends StackPane {
         canvas.setOnMouseMoved(this::handleMouseMoved);
         canvas.setOnMouseClicked(this::handleMouseClicked);
     }
-
     public void drawBoard() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        gc.clearRect(0,0,canvas.getWidth(),canvas.getHeight());
+        gc.clearRect(0,0,canvas.getWidth(), canvas.getHeight());
         for(Cell cell : board.getCells()){
             List<Point2D> corners = layout.polygonCorners(cell);
             int n = corners.size();
-            double[] xPoints = new double[n], yPoints = new double[n];
+            double[] xPoints = new double[n];
+            double[] yPoints = new double[n];
             for(int i = 0; i < n; i++){
                 xPoints[i] = corners.get(i).x;
                 yPoints[i] = corners.get(i).y;
             }
-            if(cell == hoveredCell) {
+            if(cell == hoveredCell){
                 gc.setFill(Color.LIGHTGREEN);
                 gc.fillPolygon(xPoints, yPoints, n);
             }
@@ -159,20 +158,21 @@ class HexUI extends StackPane {
             }
         }
     }
-
     private void handleMouseMoved(MouseEvent e) {
         double mx = e.getX(), my = e.getY();
         hoveredCell = board.findCellClosest(mx, my, layout);
         drawBoard();
     }
-
     private void handleMouseClicked(MouseEvent e) {
         double mx = e.getX(), my = e.getY();
         Cell c = board.findCellClosest(mx, my, layout);
         if(c != null && c.stone == null){
             int result = GameLogic.processMove(c, board, currentStone);
-            // commit 1: always alternate turn regardless of capture
-            currentStone = (currentStone == Stone.RED) ? Stone.BLUE : Stone.RED;
+            // restricted move: if result == 0, illegal move (do nothing)
+            if(result != 0){
+                // in commit 2, always alternate turn after a legal move
+                currentStone = (currentStone == Stone.RED) ? Stone.BLUE : Stone.RED;
+            }
         }
         drawBoard();
     }
@@ -180,27 +180,22 @@ class HexUI extends StackPane {
 
 class Point2D {
     public final double x, y;
-    public Point2D(double x, double y){
+    public Point2D(double x, double y) {
         this.x = x; this.y = y;
     }
 }
 
 class GameLogic {
     private static final int[][] directions = {
-            {1, -1, 0},
-            {1, 0, -1},
-            {0, 1, -1},
-            {-1, 1, 0},
-            {-1, 0, 1},
-            {0, -1, 1}
+            {1, -1, 0}, {1, 0, -1}, {0, 1, -1},
+            {-1, 1, 0}, {-1, 0, 1}, {0, -1, 1}
     };
-
     public static List<Cell> getNeighbors(Cell cell, Board board) {
         List<Cell> neighbors = new ArrayList<>();
-        for (int[] d : directions) {
+        for(int[] d : directions){
             int nq = cell.q + d[0], nr = cell.r + d[1], ns = cell.s + d[2];
-            for (Cell candidate : board.getCells()) {
-                if(candidate.q == nq && candidate.r == nr && candidate.s == ns) {
+            for(Cell candidate : board.getCells()){
+                if(candidate.q == nq && candidate.r == nr && candidate.s == ns){
                     neighbors.add(candidate);
                     break;
                 }
@@ -208,7 +203,6 @@ class GameLogic {
         }
         return neighbors;
     }
-
     public static List<Cell> getConnectedGroup(Cell cell, Board board, Stone color) {
         List<Cell> group = new ArrayList<>();
         List<Cell> frontier = new ArrayList<>();
@@ -217,16 +211,15 @@ class GameLogic {
             Cell current = frontier.remove(0);
             if(!group.contains(current)){
                 group.add(current);
-                for(Cell neighbor : getNeighbors(current, board)){
-                    if(neighbor.stone == color && !group.contains(neighbor)){
-                        frontier.add(neighbor);
+                for(Cell n : getNeighbors(current, board)){
+                    if(n.stone == color && !group.contains(n)){
+                        frontier.add(n);
                     }
                 }
             }
         }
         return group;
     }
-
     public static List<List<Cell>> getOpponentGroups(Cell cell, Board board, Stone currentColor) {
         List<List<Cell>> opponentGroups = new ArrayList<>();
         for(Cell neighbor : getNeighbors(cell, board)){
@@ -246,8 +239,9 @@ class GameLogic {
         }
         return opponentGroups;
     }
-
-    // process move without restricted move check; returns 2 if capture occurred, else 1.
+    // process move with restricted moves:
+    // if cell is adjacent to an own stone and no capture occurs, return 0 (illegal)
+    // return 2 if capture occurs, 1 if legal non-capturing move.
     public static int processMove(Cell c, Board board, Stone currentColor) {
         if(c.stone != null) return 0;
         c.stone = currentColor;
@@ -261,6 +255,18 @@ class GameLogic {
                 }
                 captureOccurred = true;
             }
+        }
+        // check restricted move: if no capture and any neighbor has currentColor, illegal
+        boolean adjacentOwn = false;
+        for(Cell neighbor : getNeighbors(c, board)){
+            if(neighbor.stone == currentColor){
+                adjacentOwn = true;
+                break;
+            }
+        }
+        if(adjacentOwn && !captureOccurred){
+            c.stone = null;
+            return 0;
         }
         return captureOccurred ? 2 : 1;
     }

@@ -2,98 +2,93 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages the layout properties of the hexagonal grid (orientation, size, origin).
- * Provides methods for converting between hex and pixel coordinates and calculating polygon corners.
- * Based on the implementation from https://www.redblobgames.com/grids/hexagons/
+ * Manages the layout properties of the hexagonal grid, including orientation (flat-top or pointy-top),
+ * hexagon size, and the grid's origin point in pixel coordinates.
+ * Provides essential methods for converting between hexagonal coordinates (used by {@link Cell})
+ * and pixel coordinates (used for drawing and mouse interaction), and for calculating
+ * the pixel coordinates of a hexagon's corners.
+ * <p>
+ * This implementation is based on the concepts and algorithms described at:
+ * <a href="https://www.redblobgames.com/grids/hexagons/">Red Blob Games: Hexagonal Grids</a>
+ * </p>
+ *
+ * @see Orientation
+ * @see Cell
+ * @see Point2D
+ * @see HexUI
  */
 public class Layout { // Changed to public
-    /** Standard orientation for flat-topped hexagons. */
+    /** Standard orientation definition for flat-topped hexagons. */
     public static final Orientation FLAT = new Orientation(
-            3.0/2.0, 0.0, Math.sqrt(3.0)/2.0, Math.sqrt(3.0), // f0, f1, f2, f3
-            2.0/3.0, 0.0, -1.0/3.0, Math.sqrt(3.0)/3.0,      // b0, b1, b2, b3
-            0.0                                              // start_angle
+            3.0/2.0, 0.0, Math.sqrt(3.0)/2.0, Math.sqrt(3.0), // f0, f1, f2, f3 (Forward matrix components)
+            2.0/3.0, 0.0, -1.0/3.0, Math.sqrt(3.0)/3.0,      // b0, b1, b2, b3 (Backward matrix components)
+            0.0                                              // start_angle (0 degrees)
     );
-    /** Standard orientation for pointy-topped hexagons. */
+    /** Standard orientation definition for pointy-topped hexagons. */
     public static final Orientation POINTY = new Orientation(
             Math.sqrt(3.0), Math.sqrt(3.0)/2.0, 0.0, 3.0/2.0, // f0, f1, f2, f3
             Math.sqrt(3.0)/3.0, -1.0/3.0, 0.0, 2.0/3.0,      // b0, b1, b2, b3
             0.5                                              // start_angle (0.5 * 60 = 30 degrees)
     );
 
-    /** The orientation definition (e.g., FLAT or POINTY). */
+    /** The orientation definition (e.g., {@link #FLAT} or {@link #POINTY}). */
     public final Orientation orientation;
-    /** The size of the hexagon (center to corner distance in pixels). */
-    public final double size; // Use Point or Vec2D for size if preferred
-    /** The pixel coordinates of the grid's origin (usually center of cell 0,0,0). */
-    public final Point2D origin; // Use Point or Vec2D for origin
+    /** The size of the hexagon (distance from center to a corner) in pixels. */
+    public final double size;
+    /** The pixel coordinates of the grid's origin (typically the center of the hexagon at q=0, r=0, s=0). */
+    public final Point2D origin;
 
     /**
-     * Constructs a Layout.
-     * @param orientation The Orientation object (e.g., Layout.FLAT).
-     * @param size The size (radius) of hexagons in pixels. Must be positive.
+     * Constructs a Layout object defining the geometry of the hexagonal grid.
+     *
+     * @param orientation The {@link Orientation} object (e.g., {@code Layout.FLAT} or {@code Layout.POINTY}). Must not be null.
+     * @param size The size (radius) of hexagons in pixels (distance from center to corner). Must be positive.
      * @param originX The pixel x-coordinate of the grid origin (center of hex 0,0,0).
      * @param originY The pixel y-coordinate of the grid origin (center of hex 0,0,0).
+     * @throws NullPointerException if orientation is null.
+     * @throws IllegalArgumentException if size is not positive.
      */
     public Layout(Orientation orientation, double size, double originX, double originY) {
         if (orientation == null) throw new NullPointerException("Orientation cannot be null.");
         if (size <= 0) throw new IllegalArgumentException("Hexagon size must be positive.");
         this.orientation = orientation;
-        this.size = size; // Store size directly
-        this.origin = new Point2D(originX, originY); // Store origin as Point2D
+        this.size = size;
+        this.origin = new Point2D(originX, originY);
     }
 
     /**
-     * Converts hexagonal axial coordinates (from a Cell object) to pixel coordinates (center of the hex).
-     * @param cell The Cell object containing q, r, s coordinates. Must not be null.
-     * @return A Point2D representing the pixel coordinates of the hexagon's center.
+     * Converts hexagonal axial coordinates (from a {@link Cell} object) to pixel coordinates,
+     * representing the center point of the hexagon on the screen.
+     *
+     * @param cell The {@link Cell} object containing the q, r, s coordinates. Must not be null.
+     * @return A {@link Point2D} representing the pixel coordinates of the hexagon's center.
      * @throws NullPointerException if cell is null.
      */
     public Point2D hexToPixel(Cell cell) {
         if (cell == null) throw new NullPointerException("Cell cannot be null for hexToPixel.");
+        // Alias for shorter code
         Orientation M = orientation;
+        // Apply the forward matrix transformation
         double x = (M.f0 * cell.q + M.f1 * cell.r) * size;
         double y = (M.f2 * cell.q + M.f3 * cell.r) * size;
+        // Add the origin offset
         return new Point2D(x + origin.x, y + origin.y);
     }
 
-    // --- Methods below might be needed if converting pixels back to hex ---
-    /*
-    public FractionalHex pixelToHex(Point2D p) {
-        Orientation M = orientation;
-        Point2D pt = new Point2D((p.x - origin.x) / size, (p.y - origin.y) / size);
-        double q = M.b0 * pt.x + M.b1 * pt.y;
-        double r = M.b2 * pt.x + M.b3 * pt.y;
-        return new FractionalHex(q, r, -q - r);
-    }
-
-    public Cell hexRound(FractionalHex h) {
-        int q = (int)(Math.round(h.q));
-        int r = (int)(Math.round(h.r));
-        int s = (int)(Math.round(h.s));
-        double q_diff = Math.abs(q - h.q);
-        double r_diff = Math.abs(r - h.r);
-        double s_diff = Math.abs(s - h.s);
-        if (q_diff > r_diff && q_diff > s_diff) {
-            q = -r - s;
-        } else if (r_diff > s_diff) {
-            r = -q - s;
-        } else {
-            s = -q - r;
-        }
-        return new Cell(q, r, s);
-    }
-    */
-
     /**
      * Calculates the pixel coordinates of the 6 corners for a given hexagon cell.
-     * @param cell The Cell for which to calculate corners. Must not be null.
-     * @return A List of Point2D objects representing the corner coordinates in clockwise or counter-clockwise order.
+     * The corners are calculated relative to the cell's center pixel coordinate.
+     *
+     * @param cell The {@link Cell} for which to calculate corners. Must not be null.
+     * @return A List of {@link Point2D} objects representing the corner coordinates,
+     * typically in clockwise or counter-clockwise order depending on the implementation of {@link #hexCornerOffset(int)}.
      * @throws NullPointerException if cell is null.
      */
     public List<Point2D> polygonCorners(Cell cell) {
         if (cell == null) throw new NullPointerException("Cell cannot be null for polygonCorners.");
         List<Point2D> corners = new ArrayList<>();
-        Point2D center = hexToPixel(cell); // Get the center pixel
+        Point2D center = hexToPixel(cell); // Get the center pixel coordinate of the hex
+        // Calculate each corner by adding an offset to the center
         for (int i = 0; i < 6; i++) {
             Point2D offset = hexCornerOffset(i);
             corners.add(new Point2D(center.x + offset.x, center.y + offset.y));
@@ -102,24 +97,18 @@ public class Layout { // Changed to public
     }
 
     /**
-     * Calculates the pixel offset from a hexagon's center to one of its corners.
-     * @param corner The corner index (0 to 5).
-     * @return A Point2D representing the offset vector.
+     * Calculates the pixel offset vector from a hexagon's center to one of its corners.
+     * The angle depends on the layout's orientation ({@code startAngle}) and the corner index.
+     *
+     * @param corner The corner index (0 to 5). Corner 0 is typically to the right for flat-top,
+     * or top-right for pointy-top, depending on the start angle.
+     * @return A {@link Point2D} representing the offset vector (dx, dy) from the center.
      */
     private Point2D hexCornerOffset(int corner) {
-        // Calculate the angle for the corner based on orientation and index
-        double angle = 2.0 * Math.PI * (orientation.startAngle + corner) / 6.0; // Adjusted angle calculation
+        // Calculate the angle for the corner in radians.
+        // The angle is determined by the orientation's start angle plus the corner index (scaled by 60 degrees or PI/3 radians).
+        double angle = 2.0 * Math.PI * (orientation.startAngle + corner) / 6.0;
+        // Calculate the offset using trigonometry (cosine for x, sine for y) scaled by the hex size.
         return new Point2D(size * Math.cos(angle), size * Math.sin(angle));
     }
-
-    // Optional: Inner class for fractional hex coordinates if needed for pixelToHex
-    /*
-    private static class FractionalHex {
-        public final double q, r, s;
-        public FractionalHex(double q, double r, double s) {
-            if (Math.round(q + r + s) != 0) throw new IllegalArgumentException("q + r + s must be 0");
-            this.q = q; this.r = r; this.s = s;
-        }
-    }
-    */
 }

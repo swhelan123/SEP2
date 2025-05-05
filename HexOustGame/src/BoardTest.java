@@ -6,8 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import java.util.List; // Assuming you might need List
 
 /**
- * Unit tests for the Board class.
- * Focuses on board creation, cell retrieval, and coordinate conversions.
+ * Unit tests for the {@link Board} class.
+ * Focuses on board creation, cell retrieval, stone counting, coordinate conversions, and reset functionality.
  */
 public class BoardTest {
 
@@ -18,6 +18,11 @@ public class BoardTest {
     private final double ORIGIN_X = 100;  // Example origin
     private final double ORIGIN_Y = 100;  // Example origin
 
+    /**
+     * Sets up the test fixture.
+     * Called before each test method execution.
+     * Initializes a default board and layout.
+     */
     @BeforeEach
     void setUp() {
         // Initialize board and layout for each test

@@ -5,11 +5,10 @@ import java.util.Collections; // For unmodifiable list if desired
 /**
  * Represents the game board, containing a collection of hexagonal cells.
  * Provides methods for accessing cells and calculating game state information.
- * @author [Group 34 WheMurPap] // <-- Add your group name/members
- * @version 1.2
- * @since 2025-05-05 // <-- Adjust date if needed
+ * @author [Group 34 WheMurPap]
  */
 public class Board { // Changed to public
+    /** The list holding all the Cell objects that make up this board. */
     private final List<Cell> cells = new ArrayList<>();
 
     /**
@@ -127,6 +126,7 @@ public class Board { // Changed to public
 
     /**
      * Resets the board by removing all stones from all cells.
+     * Sets the {@code stone} field of every {@link Cell} in the {@code cells} list to null.
      */
     public void reset() {
         for (Cell cell : this.cells) {

@@ -8,44 +8,103 @@ import java.util.Comparator; // For sorting lists in tests if needed
 import java.util.ArrayList;
 import java.util.Set; // For checking group contents efficiently
 import java.util.HashSet;
+import java.util.Collections;
 
 /**
- * Robust unit tests for the GameLogic class of the HexOust game.
- * Covers core game rules, group calculations, move legality, and captures.
+ * Robust unit tests for the {@link GameLogic} class of the HexOust game.
+ * Covers core game rules including neighbor finding, connected group calculations,
+ * move legality checks, move processing (placement and capture), and identification
+ * of capturable cells.
  */
 public class GameLogicTest {
 
     private Board board;
     private final int DEFAULT_RADIUS = 3; // Use radius 3 for more complex scenarios
 
+    /**
+     * Sets up the test fixture.
+     * Called before each test method execution.
+     * Initializes a new Board with the default radius.
+     */
     @BeforeEach
     void setUp() {
         board = new Board(DEFAULT_RADIUS);
     }
 
     // --- Helper Method ---
-    private Cell findCell(Board board, int q, int r, int s) {
-        // Use the board's getCell method for direct lookup
-        return board.getCell(q, r, s);
+
+    /**
+     * Helper method to find a cell by coordinates directly using the board's method.
+     * Asserts that the cell is not null, simplifying tests.
+     * @param b The board to search on.
+     * @param q The q coordinate.
+     * @param r The r coordinate.
+     * @param s The s coordinate.
+     * @return The found Cell.
+     * @throws AssertionError if the cell is not found.
+     */
+    private Cell findCell(Board b, int q, int r, int s) {
+        Cell cell = b.getCell(q, r, s);
+        assertNotNull(cell, String.format("Cell (%d,%d,%d) should exist on board radius %d.", q, r, s, DEFAULT_RADIUS));
+        return cell;
     }
+
+    /**
+     * Helper method to assert that two lists of Cells contain the same elements,
+     * regardless of order.
+     * @param expected The expected list of Cells.
+     * @param actual The actual list of Cells.
+     * @param message The assertion message if they don't match.
+     */
+    private void assertCellListsEqualUnordered(List<Cell> expected, List<Cell> actual, String message) {
+        assertEquals(expected.size(), actual.size(), message + " (Size mismatch)");
+        assertTrue(new HashSet<>(actual).containsAll(expected), message + " (Content mismatch - actual missing expected)");
+        assertTrue(new HashSet<>(expected).containsAll(actual), message + " (Content mismatch - expected missing actual)");
+    }
+
 
     // --- getNeighbors Tests ---
     @Test
     @DisplayName("Get Neighbors - Center Cell")
     void testGetNeighborsCenter() {
         Cell center = findCell(board, 0, 0, 0);
-        assertNotNull(center, "Center cell (0,0,0) should exist.");
         List<Cell> neighbors = GameLogic.getNeighbors(center, board);
         assertEquals(6, neighbors.size(), "Center cell should have 6 neighbors.");
+        // Optionally check coordinates of neighbors
+        Set<String> expectedCoords = Set.of("(1,0,-1)", "(1,-1,0)", "(0,-1,1)", "(-1,0,1)", "(-1,1,0)", "(0,1,-1)");
+        Set<String> actualCoords = new HashSet<>();
+        for(Cell n : neighbors) {
+            actualCoords.add(String.format("(%d,%d,%d)", n.q, n.r, n.s));
+        }
+        assertEquals(expectedCoords, actualCoords, "Neighbor coordinates mismatch for center cell.");
     }
 
     @Test
     @DisplayName("Get Neighbors - Edge Cell")
     void testGetNeighborsEdge() {
         Cell edge = findCell(board, 3, -3, 0);
-        assertNotNull(edge, "Edge cell (3,-3,0) should exist for radius 3.");
         List<Cell> neighbors = GameLogic.getNeighbors(edge, board);
         assertEquals(3, neighbors.size(), "Edge cell (3,-3,0) should have 3 neighbors.");
+        Set<String> expectedCoords = Set.of("(2,-2,0)", "(3,-2,-1)", "(2,-3,1)"); // Calculate expected neighbours
+        Set<String> actualCoords = new HashSet<>();
+        for(Cell n : neighbors) {
+            actualCoords.add(String.format("(%d,%d,%d)", n.q, n.r, n.s));
+        }
+        assertEquals(expectedCoords, actualCoords, "Neighbor coordinates mismatch for edge cell (3,-3,0).");
+    }
+
+    @Test
+    @DisplayName("Get Neighbors - Corner Cell")
+    void testGetNeighborsCorner() {
+        Cell corner = findCell(board, 3, 0, -3); // A corner cell for radius 3
+        List<Cell> neighbors = GameLogic.getNeighbors(corner, board);
+        assertEquals(2, neighbors.size(), "Corner cell (3,0,-3) should have 2 neighbors for radius 3.");
+        Set<String> expectedCoords = Set.of("(3,-1,-2)", "(2,0,-2)"); // Calculate expected neighbours
+        Set<String> actualCoords = new HashSet<>();
+        for(Cell n : neighbors) {
+            actualCoords.add(String.format("(%d,%d,%d)", n.q, n.r, n.s));
+        }
+        assertEquals(expectedCoords, actualCoords, "Neighbor coordinates mismatch for corner cell (3,0,-3).");
     }
 
     @Test
@@ -60,7 +119,6 @@ public class GameLogicTest {
     @DisplayName("Get Neighbors - Null Board Input")
     void testGetNeighborsNullBoard() {
         Cell center = findCell(board, 0, 0, 0);
-        assertNotNull(center);
         assertThrows(NullPointerException.class, () -> {
             GameLogic.getNeighbors(center, null);
         }, "getNeighbors should throw NullPointerException for null board input.");
@@ -86,11 +144,11 @@ public class GameLogicTest {
         Cell c4 = findCell(board, 3, -3, 0); c4.stone = Stone.RED; // Edge cell
         Cell other = findCell(board, 0, 1, -1); other.stone = Stone.RED; // Disconnected
 
+        List<Cell> expectedGroup = List.of(c1, c2, c3, c4);
         List<Cell> group = GameLogic.getConnectedGroup(c1, board, Stone.RED);
-        assertTrue(group.contains(c1));
-        assertTrue(group.contains(c2));
-        assertTrue(group.contains(c3));
-        assertTrue(group.contains(c4));
+
+        assertCellListsEqualUnordered(expectedGroup, group, "Linear group incorrect");
+        assertFalse(group.contains(other), "Disconnected stone should not be in the group.");
     }
 
     @Test
@@ -102,11 +160,11 @@ public class GameLogicTest {
         Cell c3 = findCell(board, 1, -2, 1); c3.stone = Stone.BLUE; // Connects c1 and c2
         Cell other = findCell(board, -1, 0, 1); other.stone = Stone.BLUE; // Disconnected
 
+        List<Cell> expectedGroup = List.of(c0, c1, c2, c3);
         List<Cell> group = GameLogic.getConnectedGroup(c0, board, Stone.BLUE);
-        assertTrue(group.contains(c0));
-        assertTrue(group.contains(c1));
-        assertTrue(group.contains(c2));
-        assertTrue(group.contains(c3));
+
+        assertCellListsEqualUnordered(expectedGroup, group, "Cluster group incorrect");
+        assertFalse(group.contains(other), "Disconnected stone should not be in the group.");
     }
 
     @Test
@@ -134,34 +192,69 @@ public class GameLogicTest {
         assertThrows(NullPointerException.class, () -> GameLogic.getConnectedGroup(cell, board, null));
     }
 
+    // --- getOpponentGroups Tests ---
+    @Test
+    @DisplayName("Get Opponent Groups - Single Adjacent Group")
+    void testGetOpponentGroupsSingle() {
+        Cell r1 = findCell(board, 0, 0, 0); r1.stone = Stone.RED;
+        Cell b1 = findCell(board, 1, -1, 0); b1.stone = Stone.BLUE; // Adjacent to r1
+        Cell b2 = findCell(board, 1, 0, -1); b2.stone = Stone.BLUE; // Adjacent to r1 and b1
+
+        List<Cell> redGroup = List.of(r1); // Player group
+        List<Cell> expectedOpponentGroup = List.of(b1, b2); // The connected blue group
+
+        List<List<Cell>> opponentGroups = GameLogic.getOpponentGroups(redGroup, board, Stone.RED);
+
+        assertEquals(1, opponentGroups.size(), "Should find exactly one opponent group.");
+        assertCellListsEqualUnordered(expectedOpponentGroup, opponentGroups.get(0), "Opponent group members mismatch.");
+    }
+
 
     @Test
-    @DisplayName("Get Opponent Groups - Connected Opponent Group")
-    void testGetOpponentGroupsConnected() {
-        Cell red1 = findCell(board, 0, 0, 0); red1.stone = Stone.RED;
-        Cell red2 = findCell(board, 0, 1, -1); red2.stone = Stone.RED;
-        Cell blue1 = findCell(board, 1, -1, 0); blue1.stone = Stone.BLUE; // Adjacent to red1
-        Cell blue2 = findCell(board, 1, 0, -1); blue2.stone = Stone.BLUE; // Adjacent to red1 & blue1
-        Cell blue3 = findCell(board, 0, -1, 1); blue3.stone = Stone.BLUE; // Adjacent to red1 & blue2
-        Cell blue4 = findCell(board, -1, 1, 0); blue4.stone = Stone.BLUE; // Adjacent to red2, not red1 group
+    @DisplayName("Get Opponent Groups - Multiple Distinct Adjacent Groups")
+    void testGetOpponentGroupsMultipleDistinct() {
+        Cell r1 = findCell(board, 0, 0, 0); r1.stone = Stone.RED;
+        Cell b1 = findCell(board, 1, -1, 0); b1.stone = Stone.BLUE; // Adjacent to r1 (Group 1)
+        Cell b2 = findCell(board, -1, 1, 0); b2.stone = Stone.BLUE; // Adjacent to r1 (Group 2, Cell 1)
+        Cell b3 = findCell(board, -1, 0, 1); b3.stone = Stone.BLUE; // Adjacent to r1 and b2 (Group 2, Cell 2)
 
-        List<Cell> redGroup = GameLogic.getConnectedGroup(red1, board, Stone.RED); // Should contain red1 and red2
+        List<Cell> redGroup = List.of(r1);
+        List<Cell> expectedOpponentGroup1 = List.of(b1);
+        List<Cell> expectedOpponentGroup2 = List.of(b2, b3);
+
         List<List<Cell>> opponentGroups = GameLogic.getOpponentGroups(redGroup, board, Stone.RED);
 
         assertEquals(2, opponentGroups.size(), "Should find two distinct opponent groups.");
-        // Find the larger blue group (blue1, blue2, blue3)
-        boolean foundLargeGroup = false;
-        boolean foundSmallGroup = false;
-        for(List<Cell> group : opponentGroups) {
-            Set<Cell> groupSet = new HashSet<>(group);
-            if (groupSet.size() == 3 && groupSet.contains(blue1) && groupSet.contains(blue2) && groupSet.contains(blue3)) {
-                foundLargeGroup = true;
-            } else if (groupSet.size() == 1 && groupSet.contains(blue4)) {
-                foundSmallGroup = true;
+
+        // Check if both expected groups are present (order doesn't matter)
+        boolean foundGroup1 = false;
+        boolean foundGroup2 = false;
+        for (List<Cell> group : opponentGroups) {
+            if (group.size() == 1 && group.contains(b1)) {
+                foundGroup1 = true;
+            } else if (group.size() == 2 && new HashSet<>(group).containsAll(expectedOpponentGroup2)) {
+                foundGroup2 = true;
             }
         }
-        assertTrue(foundLargeGroup, "Should find the connected group of 3 blue stones.");
-        assertTrue(foundSmallGroup, "Should find the single blue stone group.");
+        assertTrue(foundGroup1, "Expected opponent group 1 (single cell) not found.");
+        assertTrue(foundGroup2, "Expected opponent group 2 (two cells) not found.");
+    }
+
+    @Test
+    @DisplayName("Get Opponent Groups - Player Group Touches Same Opponent Group Multiple Times")
+    void testGetOpponentGroupsMultipleTouchesSameGroup() {
+        Cell r1 = findCell(board, 0, 0, 0); r1.stone = Stone.RED;
+        Cell r2 = findCell(board, 1, 0, -1); r2.stone = Stone.RED; // Part of player group
+        Cell b1 = findCell(board, 1, -1, 0); b1.stone = Stone.BLUE; // Adjacent to r1
+        Cell b2 = findCell(board, 2, -1, -1); b2.stone = Stone.BLUE; // Adjacent to r2 and b1
+
+        List<Cell> redGroup = GameLogic.getConnectedGroup(r1, board, Stone.RED); // Contains r1, r2
+        List<Cell> expectedOpponentGroup = List.of(b1, b2);
+
+        List<List<Cell>> opponentGroups = GameLogic.getOpponentGroups(redGroup, board, Stone.RED);
+
+        assertEquals(1, opponentGroups.size(), "Should find only one distinct opponent group, even if touched multiple times.");
+        assertCellListsEqualUnordered(expectedOpponentGroup, opponentGroups.get(0), "Opponent group members mismatch when touched multiple times.");
     }
 
     @Test
@@ -171,6 +264,16 @@ public class GameLogicTest {
         List<Cell> redGroup = List.of(red1);
         List<List<Cell>> opponentGroups = GameLogic.getOpponentGroups(redGroup, board, Stone.RED);
         assertTrue(opponentGroups.isEmpty(), "Should find no opponent groups if none are adjacent.");
+    }
+
+    @Test
+    @DisplayName("Get Opponent Groups - Only Non-Adjacent Opponents")
+    void testGetOpponentGroupsNonAdjacent() {
+        Cell red1 = findCell(board, 0, 0, 0); red1.stone = Stone.RED;
+        Cell blue1 = findCell(board, 2, 0, -2); blue1.stone = Stone.BLUE; // Not adjacent
+        List<Cell> redGroup = List.of(red1);
+        List<List<Cell>> opponentGroups = GameLogic.getOpponentGroups(redGroup, board, Stone.RED);
+        assertTrue(opponentGroups.isEmpty(), "Should find no opponent groups if opponents are not adjacent.");
     }
 
     @Test
@@ -350,7 +453,7 @@ public class GameLogicTest {
         Cell b4 = findCell(board, 0, -1, 1); b4.stone = Stone.BLUE; // Adjacent to r4. Group size 1.
 
         List<Cell> capturable = GameLogic.getCapturableCells(board, Stone.RED);
-
+        assertEquals(1, capturable.size(), "Should find exactly 1 capturable BLUE cell (b4).");
         assertTrue(capturable.contains(b4), "Only b4 should be capturable by RED.");
 
         // Check for BLUE captures

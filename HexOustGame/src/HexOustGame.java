@@ -24,9 +24,7 @@ import java.net.URL; // Needed for CSS loading
  * Sets up the JavaFX stage and scene, manages screen transitions
  * (main menu, game, settings), loads CSS, initializes sounds,
  * and handles theme application.
- * @author [Group 34 WheMurPap] // <-- Update with your actual group name/members
- * @version 1.2
- * @since 2025-05-05 // <-- Adjust date if needed
+ * @author [Group 34 WheMurPap]
  */
 public class HexOustGame extends Application {
 
@@ -150,6 +148,7 @@ public class HexOustGame extends Application {
         if (mainScene == null) {
             mainScene = new Scene(menuLayout, 900, 900);
         } else {
+            // Ensure listener from game screen is removed when returning to menu
             mainScene.removeEventHandler(KeyEvent.KEY_PRESSED, gameKeyListener);
             mainScene.setRoot(menuLayout);
         }
@@ -217,7 +216,7 @@ public class HexOustGame extends Application {
     /**
      * Opens the "How to Play" URL (linking to the HexOust rules on mindsports.nl)
      * in the system's default web browser. Uses HostServices if available,
-     * otherwise falls back to java.awt.Desktop.
+     * otherwise falls back to java.awt.Desktop. Handles potential exceptions.
      */
     private void openHowToPlayLink() {
         final String url = "https://mindsports.nl/index.php/the-pit/614-hexoust";
@@ -230,24 +229,26 @@ public class HexOustGame extends Application {
                 Desktop.getDesktop().browse(new URI(url));
             } else {
                 System.err.println("Cannot open link: Desktop browsing not supported and HostServices unavailable.");
+                // Optionally show an alert to the user here
             }
-        } catch (IOException | URISyntaxException ex) { // *** FIXED: Added catch block ***
+        } catch (IOException | URISyntaxException ex) {
             System.err.println("Failed to open link: " + url);
             ex.printStackTrace();
+            // Optionally show an alert to the user here
         }
-    } // *** FIXED: Added closing brace for method ***
+    }
 
 
     /**
      * Sets up and switches the scene to the actual game UI (HexUI).
      * Creates a new Board and Layout for the game instance.
-     * Applies the current theme and adds a key listener for pausing.
+     * Applies the current theme and adds a key listener for pausing (Escape key).
      */
     public void startGame() {
         // Create new instances for a new game
         Board board = new Board(6); // Example radius
         // Centered layout for a 900x900 scene, considering top bar height
-        Layout layout = new Layout(Layout.FLAT, 35, 450, 450 - (50 / 2)); // Adjust origin Y
+        Layout layout = new Layout(Layout.FLAT, 35, 450, 450 - (50 / 2.0)); // Ensure double division for Y offset
         gameUi = new HexUI(board, layout, this); // Pass 'this' (HexOustGame instance)
 
         // Apply CSS and Theme to the game UI root (which is a StackPane)
@@ -276,11 +277,11 @@ public class HexOustGame extends Application {
 
     /**
      * Key event handler specifically for the game screen.
-     * Listens for the ESCAPE key to toggle the pause state via the HexUI.
+     * Listens for the ESCAPE key to toggle the pause state via the {@link HexUI#togglePause()} method.
      */
     private final javafx.event.EventHandler<KeyEvent> gameKeyListener = event -> {
         // Only toggle pause if the game UI is active and ESCAPE is pressed
-        if (event.getCode() == KeyCode.ESCAPE && gameUi != null && mainScene.getRoot() == gameUi) {
+        if (event.getCode() == KeyCode.ESCAPE && gameUi != null && mainScene != null && mainScene.getRoot() == gameUi) {
             gameUi.togglePause(); // Call the togglePause method in HexUI
         }
     };

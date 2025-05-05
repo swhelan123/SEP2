@@ -1,0 +1,210 @@
+/* --- Global and Root Styles --- */
+
+/* Apply theme-specific root styles */
+.root.theme-light {
+    -fx-font-family: "System";
+    -fx-primary-text-color: #212121; /* Dark Grey */
+    -fx-secondary-text-color: #555555;
+    -fx-background-gradient: linear-gradient(from 0% 0% to 0% 100%, #e0e0e0 0%, #a0a0a0 100%);
+    -fx-game-background: #ECEFF1; /* Light grey */
+    -fx-top-bar-background: #F5F5F5;
+    -fx-top-bar-border: #CCCCCC;
+    -fx-popup-overlay: rgba(240, 240, 240, 0.8); /* Light overlay */
+    -fx-popup-border: #78909C;
+    -fx-pause-popup-bg1: #CFD8DC;
+    -fx-pause-popup-bg2: #B0BEC5;
+}
+
+.root.theme-dark {
+    -fx-font-family: "System";
+    -fx-primary-text-color: whitesmoke;
+    -fx-secondary-text-color: lightgray;
+    -fx-background-gradient: linear-gradient(from 0% 0% to 100% 100%, #444444, #222222);
+    -fx-game-background: #37474F; /* Dark Blue Grey */
+    -fx-top-bar-background: #455A64;
+    -fx-top-bar-border: #607D8B;
+    -fx-popup-overlay: rgba(30, 30, 30, 0.85); /* Dark overlay */
+    -fx-popup-border: #90A4AE;
+    -fx-pause-popup-bg1: #546E7A;
+    -fx-pause-popup-bg2: #37474F;
+}
+
+.root.theme-contrast {
+    -fx-font-family: "System";
+    -fx-primary-text-color: white;
+    -fx-secondary-text-color: white;
+    -fx-background-gradient: black; /* Solid black */
+    -fx-game-background: black;
+    -fx-top-bar-background: black;
+    -fx-top-bar-border: white;
+    -fx-popup-overlay: rgba(0, 0, 0, 0.9); /* Very dark overlay */
+    -fx-popup-border: white;
+    -fx-pause-popup-bg1: black;
+    -fx-pause-popup-bg2: black;
+}
+
+/* --- Menu Styles --- */
+
+#main-menu-layout, #settings-menu-layout {
+    -fx-background-color: -fx-background-gradient;
+}
+
+#main-title {
+    -fx-font-size: 80px;
+    -fx-font-weight: bold; /* Use bold */
+    -fx-text-fill: -fx-primary-text-color;
+    -fx-effect: dropshadow(gaussian, black, 15, 0.4, 0, 0);
+}
+
+#settings-title {
+    -fx-font-size: 48px;
+    -fx-font-weight: bold; /* Use bold */
+    -fx-text-fill: -fx-primary-text-color;
+    -fx-effect: dropshadow(gaussian, black, 10, 0.4, 0, 0);
+}
+
+.settings-label {
+    -fx-font-size: 18px;
+    -fx-text-fill: -fx-secondary-text-color;
+}
+
+.theme-selector {
+    -fx-font-size: 16px;
+    -fx-pref-width: 200px;
+    /* Add theme specific dropdown styles if needed */
+}
+
+/* --- Button Base Styles --- */
+.menu-button, .popup-button {
+    -fx-font-family: "System";
+    -fx-background-radius: 8;
+    -fx-text-fill: white;
+    -fx-font-weight: bold; /* bold is valid here */
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+/* Specific padding/size for menu vs popup */
+.menu-button {
+    -fx-padding: 15 30 15 30;
+    -fx-min-width: 220px;
+    -fx-font-size: 20px;
+}
+.popup-button {
+    -fx-padding: 10 25 10 25;
+    -fx-min-width: 180px;
+    -fx-font-size: 18px;
+}
+
+/* Theme-specific border colors */
+.theme-light .menu-button, .theme-light .popup-button { -fx-border-color: rgba(0,0,0,0.2); }
+.theme-dark .menu-button, .theme-dark .popup-button { -fx-border-color: rgba(255,255,255,0.3); }
+.theme-contrast .menu-button, .theme-contrast .popup-button { -fx-border-color: white; }
+
+/* Button Specific Colors (Gradients) */
+.play-button, .resume-button { -fx-background-color: linear-gradient(#4CAF50, #388E3C); }
+.info-button, .restart-button { -fx-background-color: linear-gradient(#2196F3, #1976D2); }
+.settings-button, .secondary-button { -fx-background-color: linear-gradient(#78909C, #546E7A); }
+.exit-button { -fx-background-color: linear-gradient(#f44336, #d32f2f); }
+.return-menu-button { -fx-background-color: linear-gradient(#FFB74D, #FFA000); }
+.replay-button { -fx-background-color: linear-gradient(#61a2b1, #2A5058); }
+
+/* Button Hover Effects */
+.menu-button:hover, .popup-button:hover { -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.3), 10, 0.4, 0, 0); }
+.play-button:hover, .resume-button:hover { -fx-background-color: linear-gradient(#66BB6A, #4CAF50); }
+.info-button:hover, .restart-button:hover { -fx-background-color: linear-gradient(#64B5F6, #2196F3); }
+.settings-button:hover, .secondary-button:hover { -fx-background-color: linear-gradient(#90A4AE, #607D8B); }
+.exit-button:hover { -fx-background-color: linear-gradient(#EF5350, #f44336); }
+.return-menu-button:hover { -fx-background-color: linear-gradient(#FFCC80, #FFB74D); }
+.replay-button:hover { -fx-background-color: linear-gradient(#80CBC4, #4DB6AC); }
+
+
+/* --- Game UI Styles --- */
+
+.game-pane {
+    -fx-background-color: -fx-game-background;
+}
+
+.top-bar {
+    -fx-pref-height: 50px;
+    -fx-max-height: 50px;
+    -fx-padding: 5 15 5 15;
+    -fx-alignment: center-left;
+    -fx-background-color: -fx-top-bar-background;
+    -fx-border-color: -fx-top-bar-border;
+    -fx-border-width: 0 0 1 0;
+}
+
+.status-label {
+    -fx-font-family: "System";
+    -fx-font-size: 18px;
+    -fx-text-fill: -fx-secondary-text-color;
+}
+
+.turn-indicator {
+    -fx-font-family: "System";
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    /* Text fill set dynamically */
+}
+
+.pause-button {
+    -fx-font-family: "System";
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+    -fx-padding: 5 10 5 10;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-border-width: 1;
+}
+/* Theme-specific pause button */
+.theme-light .pause-button { -fx-background-color: #DDDDDD; -fx-text-fill: black; -fx-border-color: #AAAAAA; }
+.theme-light .pause-button:hover { -fx-background-color: #CCCCCC; -fx-border-color: #888888; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0.2, 0, 1); }
+.theme-dark .pause-button, .theme-contrast .pause-button { -fx-background-color: #78909C; -fx-text-fill: white; -fx-border-color: #CFD8DC; }
+.theme-dark .pause-button:hover, .theme-contrast .pause-button:hover { -fx-background-color: #90A4AE; -fx-border-color: #ECEFF1; -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.2), 5, 0.2, 0, 1); }
+
+
+/* --- Popup Styles (Pause/Victory) --- */
+
+.overlay {
+    /* Fill color set based on theme */
+}
+.theme-light .overlay { -fx-fill: rgba(240, 240, 240, 0.8); }
+.theme-dark .overlay { -fx-fill: rgba(30, 30, 30, 0.85); }
+.theme-contrast .overlay { -fx-fill: rgba(0, 0, 0, 0.9); }
+
+
+.popup-content { /* Styles the background rectangle */
+    -fx-max-width: 500px; /* Max width for the popup content */
+    -fx-max-height: 400px; /* Max height */
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0.5, 0, 0);
+    /* Background fill and border set below based on context */
+}
+
+.pause-popup {
+    -fx-max-width: 420px;
+    -fx-max-height: 380px;
+    -fx-border-color: -fx-popup-border;
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, -fx-pause-popup-bg1, -fx-pause-popup-bg2);
+}
+
+/* Victory popup needs specific background based on winner - handled inline for now */
+/* Or use specific classes .winner-red, .winner-blue if more complex */
+.victory-title {
+    -fx-font-family: "System";
+    -fx-font-weight: bold; /* FIXED: Changed from extra-bold */
+    -fx-font-size: 60px;
+    -fx-effect: dropshadow(gaussian, black, 15, 0.4, 0, 0);
+    -fx-text-alignment: center;
+}
+
+.pause-title {
+    -fx-font-family: "System";
+    -fx-font-weight: bold; /* FIXED: Changed from extra-bold */
+    -fx-font-size: 60px;
+    -fx-text-fill: -fx-primary-text-color;
+    -fx-text-alignment: center;
+    -fx-effect: dropshadow(gaussian, black, 10, 0.4, 0, 0);
+}
